@@ -14,6 +14,10 @@ Paper: https://arxiv.org/abs/2601.03782
 
 ## Environment setup
 
+The `pointworld-env` conda env already exists on this machine — just `conda activate pointworld-env`
+rather than re-running `conda env create`. Only recreate it (or `conda env update --prune`) if
+dependencies are missing/out of date.
+
 ```bash
 conda env create -n pointworld-env -f environments/train_eval.yml
 conda activate pointworld-env
