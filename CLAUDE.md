@@ -162,8 +162,10 @@ check it before modifying these, license terms apply):
 ## Working practices
 
 - Commit work to git regularly as you go, with clean, descriptive commit messages — don't let a
-  long working session accumulate into one giant uncommitted diff. Push to the GitHub remote
-  regularly too, so work-in-progress isn't only sitting locally and can't be lost.
+  long working session accumulate into one giant uncommitted diff.
+- `main` is protected: don't push directly to it. Work on a feature branch, push that branch
+  regularly (so work-in-progress isn't only sitting locally and can't be lost), and open a PR for
+  review/merge into `main`.
 
 ## Conventions worth knowing
 
