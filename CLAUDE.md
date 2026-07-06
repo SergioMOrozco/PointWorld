@@ -170,6 +170,9 @@ check it before modifying these, license terms apply):
 - `main` is protected: don't push directly to it. Work on a feature branch, push that branch
   regularly (so work-in-progress isn't only sitting locally and can't be lost), and open a PR for
   review/merge into `main`.
+- `origin` is the read-only upstream `NVlabs/PointWorld` repo — pushing there will fail with a
+  permissions error. Push feature branches to the `fork` remote instead
+  (`https://github.com/SergioMOrozco/PointWorld.git`), and open PRs from there.
 
 ## Conventions worth knowing
 
