@@ -28,6 +28,8 @@ from utils import build_pk_chain_from_urdf
 GRIPPER_KEYWORDS = ['finger', 'knuckle', 'robotiq', 'gripper']
 # panda hand mesh names:
 GRIPPER_KEYWORDS += ['Part__Feature002_011', 'Part__Feature005_005', 'Part__Feature_011', 'Part__Feature001_011', 'Part__Feature005_000']
+# so101 gripper mesh names (moving jaw + fixed-jaw housing on gripper_link):
+GRIPPER_KEYWORDS += ['wrist_roll_follower', 'moving_jaw']
 R1PRO_INERTIAL_FRAME_OFFSET = torch.tensor([0.049262, 0.000088054, -0.18255], dtype=torch.float32)
 ROBOTOIQ_MIMIC_JOINTS = (
     ('finger_joint', 1.0),
@@ -166,21 +168,37 @@ class RobotSampler:
         device: str = 'cuda',
         apply_r1pro_inertial_frame_offset: bool = False,
         link_whitelist: Optional[List[str]] = None,
+        mesh_link_match_mode: str = 'full',
     ):
         """
         Initialize the GPU-accelerated RobotSampler.
-        
+
         Args:
             urdf_path: Path to the robot URDF file
             gripper_only: If True, only sample points from gripper-related meshes
             device: Device to use for computation ('cuda' or 'cpu')
             apply_r1pro_inertial_frame_offset: Whether to apply R1Pro-specific frame offset
             link_whitelist: Optional list of link names to keep when sampling meshes
+            mesh_link_match_mode: How _initialize_mesh_mappings() matches each visual mesh to
+                its parent link. 'full' (default, matches existing droid/behavior behavior)
+                compares the whole 4x4 transform via Frobenius norm; this is unreliable when a
+                mesh's <visual><origin> has a large rotational offset from its link frame (e.g.
+                a 180-degree flip, common in CAD/onshape-to-robot exports), since two unrelated
+                but nearby links can end up closer in full-matrix distance than the true parent.
+                'translation' matches using only the 3D translation component, which is robust
+                to such rotational offsets. Kept opt-in (rather than replacing 'full' outright)
+                because switching it for Franka/R1Pro changes some existing mesh attachments
+                (verified via online_eval/tools/check_mesh_link_matching.py) and could shift
+                robot-geometry inputs for the already-trained droid/behavior checkpoints.
         """
         self.urdf_path = urdf_path
         self.gripper_only = gripper_only
         self.apply_r1pro_inertial_frame_offset = apply_r1pro_inertial_frame_offset
         self._link_whitelist = set(link_whitelist) if link_whitelist is not None else None
+        assert mesh_link_match_mode in ('full', 'translation'), (
+            f"mesh_link_match_mode must be 'full' or 'translation', got {mesh_link_match_mode!r}"
+        )
+        self.mesh_link_match_mode = mesh_link_match_mode
 
         # Set device (prefer GPU if available)
         self.device = torch.device(device)
@@ -284,11 +302,14 @@ class RobotSampler:
             # Find best matching link by comparing transforms directly
             matched_link_name = None
             min_err = float('inf')
-            
+
             for link_name, link_tf in link_tf_ref.items():
                 link_mat = link_tf.get_matrix()[0].to(self.device, dtype=self.dtype)  # (4,4)
-                # Compute Frobenius norm difference
-                err = torch.norm(link_mat - mesh_T, p='fro').item()
+                if self.mesh_link_match_mode == 'translation':
+                    err = torch.norm(link_mat[:3, 3] - mesh_T[:3, 3], p=2).item()
+                else:
+                    # Compute Frobenius norm difference
+                    err = torch.norm(link_mat - mesh_T, p='fro').item()
                 if err < min_err:
                     min_err = err
                     matched_link_name = link_name
