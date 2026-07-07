@@ -15,11 +15,17 @@ sweep -- this script is the visual counterpart of that same check).
 """
 
 import argparse
+import sys
 import time
+from pathlib import Path
 
 import numpy as np
 import torch
 import viser
+
+_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
 
 from online_eval.so101_robot import build_so101_robot_sampler
 

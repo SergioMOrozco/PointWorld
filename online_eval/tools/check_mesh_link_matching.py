@@ -7,8 +7,15 @@ the metric would change any attachment for the existing production robots (Frank
 before applying it as a fix for SO101.
 """
 
+import sys
+from pathlib import Path
+
 import numpy as np
 import torch
+
+_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
 
 from pointworld.urdfpy_compat import ensure_urdfpy_numpy_compat
 

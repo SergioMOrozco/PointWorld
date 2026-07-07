@@ -8,8 +8,14 @@ finite scene_flows/confidence. Doesn't require a camera or robot -- pure shape/c
 """
 
 import argparse
+import sys
+from pathlib import Path
 
 import torch
+
+_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
 
 from online_eval.model_loading import load_pointworld_model
 

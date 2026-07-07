@@ -6,9 +6,15 @@ trajectory (no physical camera/robot needed), then feed the result straight into
 """
 
 import argparse
+import sys
+from pathlib import Path
 
 import numpy as np
 import torch
+
+_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
 
 from online_eval.model_loading import load_pointworld_model
 from online_eval.sample_builder import RawCameraFrame, build_live_sample

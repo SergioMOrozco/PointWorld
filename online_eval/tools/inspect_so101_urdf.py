@@ -11,7 +11,12 @@ joint traversal order depends on pytorch_kinematics's URDF tree walk.
 """
 
 import argparse
+import sys
 from pathlib import Path
+
+_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
 
 from pointworld.urdfpy_compat import ensure_urdfpy_numpy_compat
 

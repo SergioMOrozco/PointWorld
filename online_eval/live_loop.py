@@ -13,10 +13,19 @@ synthetic data standing in for them.
 """
 
 import argparse
+import sys
 import time
+from pathlib import Path
 from typing import Callable, Optional
 
 import numpy as np
+
+# Allow running this file directly (`python online_eval/live_loop.py`), not just as
+# `python -m online_eval.live_loop` -- the latter puts the repo root on sys.path automatically,
+# the former does not (sys.path[0] becomes this file's own directory instead).
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
 
 from online_eval.model_loading import load_pointworld_model
 from online_eval.rolling_buffer import N_STEPS_PER_MODEL_STEP, RollingBuffer
