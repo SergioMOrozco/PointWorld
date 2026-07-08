@@ -200,10 +200,23 @@ def run_live_loop(
                 # caught up to it) directly onto the same live server. visualize() resets the scene
                 # graph each call (see SceneBuilder.populate_existing), so this must be re-added
                 # every iteration, after visualize().
+                #
+                # backproject_scene_points returns points in raw world coordinates, but the main
+                # visualization is rendered in build_live_sample's center_shift'd frame (scene_flows/
+                # robot_flows/cam*_extrinsic were all re-centered around the first scene+robot points'
+                # mean -- see dataset_components/transforms.py::center_shift). Without correcting for
+                # that, this overlay would show up as a second copy of the scene, offset by the shift
+                # amount. sample["__shift_amount__"] is defined so that
+                # shifted_point == raw_point + shift_amount (verified against center_shift directly;
+                # do not flip this sign without re-checking).
                 if live_session is not None:
                     actual_points, actual_colors, _rgb, _depth, _intr = backproject_scene_points(
                         window.now_frame
                     )
+                    if "__shift_amount__" in sample_np:
+                        actual_points = actual_points + np.asarray(
+                            sample_np["__shift_amount__"], dtype=actual_points.dtype
+                        ).reshape(1, 3)
                     try:
                         live_session.server.scene.add_point_cloud(
                             "/actual_future",
