@@ -36,7 +36,7 @@ N_STEPS_PER_MODEL_STEP = 1  # PLACEHOLDER -- calibrate empirically, see module d
 @dataclass
 class BufferedTick:
     frame: RawCameraFrame
-    joint_positions: np.ndarray  # (n_joints,)
+    robot_link_pcds: dict[str, np.ndarray]  # {link_name: (Ni,3) world-frame points}
     gripper_position: float
     timestamp: float
 
@@ -47,7 +47,7 @@ class BufferedWindow:
 
     now_frame: RawCameraFrame  # the most-recent ("now") camera frame, for the actual-future overlay
     t0_frame: RawCameraFrame  # the delayed frame used as the model's t=0
-    joint_trajectory: np.ndarray  # (11, n_joints), t=0..10, real (not extrapolated)
+    robot_link_pcds_trajectory: list[dict[str, np.ndarray]]  # length 11, t=0..10, real (not extrapolated)
     gripper_trajectory: np.ndarray  # (11,)
     t0_timestamp: float
     now_timestamp: float
@@ -66,14 +66,14 @@ class RollingBuffer:
     def push(
         self,
         frame: RawCameraFrame,
-        joint_positions: np.ndarray,
+        robot_link_pcds: dict[str, np.ndarray],
         gripper_position: float,
         timestamp: float,
     ) -> None:
         self._buffer.append(
             BufferedTick(
                 frame=frame,
-                joint_positions=np.asarray(joint_positions, dtype=np.float32),
+                robot_link_pcds=robot_link_pcds,
                 gripper_position=float(gripper_position),
                 timestamp=timestamp,
             )
@@ -99,13 +99,13 @@ class RollingBuffer:
         assert indices[-1] <= now_idx, (indices, now_idx)
 
         ticks = [buf[i] for i in indices]
-        joint_trajectory = np.stack([t.joint_positions for t in ticks], axis=0)  # (11, n_joints)
+        robot_link_pcds_trajectory = [t.robot_link_pcds for t in ticks]  # length 11
         gripper_trajectory = np.array([t.gripper_position for t in ticks], dtype=np.float32)  # (11,)
 
         return BufferedWindow(
             now_frame=buf[now_idx].frame,
             t0_frame=ticks[0].frame,
-            joint_trajectory=joint_trajectory,
+            robot_link_pcds_trajectory=robot_link_pcds_trajectory,
             gripper_trajectory=gripper_trajectory,
             t0_timestamp=ticks[0].timestamp,
             now_timestamp=buf[now_idx].timestamp,
